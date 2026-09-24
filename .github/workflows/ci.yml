@@ -1,0 +1,37 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t my-devops-project .
+
+      - name: Run container
+        run: docker run -d -p 8080:80 --name test-container my-devops-project
+
+      - name: Wait for nginx to start
+        run: sleep 3
+
+      - name: Test website
+        run: |
+          echo "Testing http://localhost:8080"
+          curl -f http://localhost:8080 || (docker logs test-container && exit 1)
+          echo "✅ Website is up!"
+
+      - name: Show running containers
+        run: docker ps
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f test-container || true
